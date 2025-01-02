@@ -35,8 +35,6 @@ http://127.0.0.1:500
 
 ### Screenshot
 
-
-### Search Results
 ![Search Results](screenshot/sc1.jpg)
 
 ![Search Results](screenshot/sc2.jpg)
