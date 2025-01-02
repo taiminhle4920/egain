@@ -20,7 +20,7 @@ pip install -r requirements.txt
 ### Configuration
 Create a .env file in the root directory with the following content:
 AI_API_KEY=your_google_ai_api_key
-SERPAPI_KEY=your_serpapi_api_key
+RAPID_API_KEY=your_rapid_api_key
 
 
 ### Usage
