@@ -88,8 +88,8 @@ button:active {
     transform: translateY(0);
 }
 textarea {
-    width: 400px;
-    height: 300px;
+    width: 500px;
+    height: 520px;
     padding: 12px;
     border: 1px solid #ccc;
     border-radius: 5px;

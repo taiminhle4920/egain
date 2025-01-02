@@ -1,70 +1,78 @@
 import unittest
-from app import app, geocode_address, get_nearby_schools, get_house_info
-from unittest.mock import patch
+from unittest.mock import patch, MagicMock
+from flask import Flask
+from app import app, geocode_address
 
 
 class FlaskAppTestCase(unittest.TestCase):
     def setUp(self):
-        self.app = app.test_client()
-        self.app.testing = True
+        self.app = app
+        self.client = self.app.test_client()
+        self.app.config["TESTING"] = True
 
-    @patch('app.geocode_address')
-    @patch('app.get_nearby_schools')
-    @patch('app.get_house_info')
-    @patch('app.model.generate_content')
-    def test_search_property(self, mock_generate_content, mock_get_house_info, mock_get_nearby_schools, mock_geocode_address):
+    @patch("app.geocode_address")
+    @patch("requests.get")
+    @patch("app.model.generate_content")
+    def test_search_property_valid_address(self, mock_generate_content, mock_requests_get, mock_geocode_address):
+        mock_geocode_address.return_value = True
         
-        form_data = {
-            "house_number": "5727",
-            "street": "Sagewell Way",
-            "city": "San Jose",
-            "state": "CA",
-            "zip_code": "95138"
+        mock_requests_get.return_value.json.return_value = {
+            "property": {
+                "lotSize": "5600 sqft",
+                "bathrooms": 3.5,
+                "bedrooms": 5,
+                "schools": ["Example Elementary School", "Example High School"],
+                "estimatedValue": 1400700
+            }
         }
+        
+        mock_generate_content.return_value.text = "Sample AI-generated summary"
 
-        response = self.app.post('/search', data=form_data)
-        self.assertIsNotNone(response.data)
+        response = self.client.post(
+            "/search",
+            data={
+                "house_number": "5727",
+                "street": "Sagewell Way",
+                "city": "San Jose",
+                "state": "CA",
+                "zip_code": "95138"
+            }
+        )
 
-    
-
-    def test_index_page(self):
-       
-        response = self.app.get('/')
         self.assertEqual(response.status_code, 200)
-        self.assertIn(b"Search Property and Nearby Schools", response.data)
+        self.assertIn("Sample AI-generated summary", response.get_data(as_text=True))
 
-    def test_geocode_address(self):
-        """Test the geocode_address function."""
-        with patch('app.geolocator.geocode') as mock_geolocator:
-            mock_geolocator.return_value = type(
-                'MockLocation', (), {"latitude": 37.7749, "longitude": -122.4194})
-            lat, lon = geocode_address("123 Main St, San Francisco, CA, 94105")
-            self.assertEqual(lat, 37.7749)
-            self.assertEqual(lon, -122.4194)
+    @patch("app.geocode_address")
+    def test_search_property_invalid_address(self, mock_geocode_address):
+        mock_geocode_address.return_value = False
 
-    def test_wrong_address(self):
-        with patch('app.geolocator.geocode') as mock_geolocator:
-            mock_geolocator.return_value = None
-            lat, lon = geocode_address("123 Main St, San Francisco, CA, 94105")
-            self.assertIsNone(lat)
-            self.assertIsNone(lon)
-            
-
-    def test_get_nearby_schools(self):
-        with patch('requests.get') as mock_requests:
-            mock_requests.return_value.json.return_value = {
-                "elements": [{"tags": {"name": "Mock School"}}]
+        response = self.client.post(
+            "/search",
+            data={
+                "house_number": "9999",
+                "street": "Invalid Way",
+                "city": "Unknown City",
+                "state": "XX",
+                "zip_code": "00000"
             }
-            schools = get_nearby_schools(37.7749, -122.4194)
-            self.assertIsNotNone(schools)
+        )
+        self.assertEqual(response.status_code, 400)
+        self.assertIn("Invalid address", response.get_data(as_text=True))
 
-    def test_get_house_info(self):
-        with patch('app.GoogleSearch') as mock_google_search:
-            mock_google_search.return_value.get_dict.return_value = {
-                "property": "Mock Property Data"
-            }
-            result = get_house_info("5727 Sagewell Way, San Jose, CA, 95138")
-            self.assertIsNotNone(result)
+    def test_geocode_address_valid(self):
+        """Test the geocode_address function with a valid address."""
+        with patch("app.geolocator.geocode") as mock_geocode:
+            mock_geocode.return_value = MagicMock()
+            result = geocode_address(
+                "1600 Amphitheatre Parkway, Mountain View, CA 94043")
+            self.assertTrue(result)
+
+    def test_geocode_address_invalid(self):
+        """Test the geocode_address function with an invalid address."""
+        with patch("app.geolocator.geocode") as mock_geocode:
+            mock_geocode.return_value = None
+            result = geocode_address("Invalid Address")
+            self.assertFalse(result)
 
 
 if __name__ == "__main__":

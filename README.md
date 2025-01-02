@@ -13,7 +13,7 @@ python -m venv venv
 ### 3. Activate the Virtual Environment
 *   Linux/Mac: source venv/bin/activate
 *   Windows: venv\Scripts\activate
-
+xx
 ### 4. Install Dependencies
 pip install -r requirements.txt
 
@@ -32,3 +32,11 @@ python app.py
 #### 2. Access the Application
 Open your browser and navigate to:
 http://127.0.0.1:500
+
+### Screenshot
+
+
+### Search Results
+![Search Results](screenshot/sc1.jpg)
+
+![Search Results](screenshot/sc2.jpg)
